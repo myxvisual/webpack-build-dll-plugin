@@ -4,7 +4,8 @@ const { exec } = require('child_process')
 
 function WebpackBuildDllPlugin(options) {
 	const defaultOptions = {
-		dllConfigPath: ''
+		dllConfigPath: '',
+		forceBuild: false
 	}
 	this.options = { ...defaultOptions, ...options }
 }
@@ -28,26 +29,15 @@ WebpackBuildDllPlugin.prototype.apply = function(compiler) {
 			const firstEntryName = Object.keys(entry)[0]
 			const filename = output.filename.replace('[name]', firstEntryName)
 			const absolutePath = path.join(rootPath, outputPath, filename)
-			if (fs.existsSync(absolutePath)) {
+			if (options.forceBuild || !fs.existsSync(absolutePath)) {
 				exec(`cross-env NODE_ENV=${process.env.NODE_ENV || 'development'} webpack --config ${dllConfigPath}`, logger)
+			} else {
+				console.log('[webpack-build-dll-plugin] DllReference is already builded.')
 			}
 		} else {
 			throw Error('[webpack-build-dll-plugin] Not Found dllConfigPath.')
 		}
 	}
-
-	compiler.plugin('compilation', compilation => {
-		console.log('Executing pre-build scripts')
-	})
-
-	compiler.plugin('emit', (compilation, callback) => {
-		console.log('Executing post-build scripts')
-		callback()
-	})
-
-	compiler.plugin('done', function() {
-		console.log('done')
-	})
 }
 
 module.exports = WebpackBuildDllPlugin
