@@ -7,10 +7,6 @@ $ npm i webpack-build-dll-plugin -D
 Basic Usage
 -----------
 
-The plugin will generate an HTML5 file for you that includes all your webpack
-bundles in the body using `script` tags. Just add the plugin to your webpack
-config as follows:
-
 ```javascript
 var WebpackBuildDllPlugin = require('webpack-build-dll-plugin');
 var webpackConfig = {
