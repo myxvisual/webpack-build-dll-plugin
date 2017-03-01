@@ -1,10 +1,11 @@
 {
   "name": "webpack-build-dll-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simplifies run build dll reference for your webpack project",
   "main": "index.js",
   "scripts": {
     "start": "babel ./index.es6 -w -o ./index.js",
+    "build": "babel ./index.es6 -o ./index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
