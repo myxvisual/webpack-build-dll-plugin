@@ -49,21 +49,21 @@ function WebpackBuildDllPlugin(options) {
 	}
 	const allBuildFiles = [...buildJSFiles, ...manifestFiles]
 	if (options.forceBuild || !allBuildFiles.every(buildFile => fs.existsSync(buildFile))) {
-		runWebpackBuildDll(dllConfigPath)
-		fs.readFile(path.join(rootPath, './package.json'), 'utf8', (err, data) => {
-			if (!err) {
-				fs.writeFile(cacheDependenciesFile, JSON.stringify(JSON.parse(data).dependencies || {}))
-			}
-		})
+		buildDllReferenceFiles(dllConfigPath)
 	} else {
 		checkLibManifest(dllPlugin, dllConfigPath)
 	}
 }
 
-function runWebpackBuildDll(dllConfigPath) {
+function buildDllReferenceFiles(dllConfigPath) {
 	console.log(green(
 		execSync(`cross-env NODE_ENV=${process.env.NODE_ENV || 'development'} webpack --config ${dllConfigPath}`)
 	))
+	fs.readFile(path.join(rootPath, './package.json'), 'utf8', (err, data) => {
+		if (!err) {
+			fs.writeFile(cacheDependenciesFile, JSON.stringify(JSON.parse(data).dependencies || {}))
+		}
+	})
 	console.log(yellow('[webpack-build-dll-plugin] DllReference is builded.\n'))
 }
 
@@ -84,13 +84,13 @@ function checkLibManifest(dllPlugin, dllConfigPath) {
 		const dependenciesNames = Object.keys(dependencies)
 		const oldDependenciesNames = Object.keys(oldDependencies)
 		if (dependenciesNames.length !== oldDependenciesNames.length) {
-			runWebpackBuildDll(dllConfigPath)
+			buildDllReferenceFiles(dllConfigPath)
 		} else {
 			let isSameDependencies = true
 			for (const name of dependenciesNames) {
 				if (dependencies[name] !== oldDependencies[name]) {
 					console.log(green('[webpack-build-dll-plugin] your package.json is changed, will rebuild DllReference.'))
-					runWebpackBuildDll(dllConfigPath)
+					buildDllReferenceFiles(dllConfigPath)
 					isSameDependencies = false
 					break
 				}

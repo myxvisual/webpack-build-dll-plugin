@@ -20,7 +20,8 @@ var webpackConfig = {
     new WebpackBuildDllPlugin({
       // dllConfigPath: required, your Dll Config Path, support absolute path.
       dllConfigPath: './webpack.dll.config.js',
-      // forceBuild: default is false, if {true} it will build DllReference in once upon starting Webpack.
+      // forceBuild: default is {false}, when dependencies change, will rebuild DllReference files
+      // if {true} it will build DllReference in once upon starting Webpack.
       forceBuild: false
     }),
     new webpack.DllReferencePlugin({
