@@ -16,10 +16,13 @@ var webpackConfig = {
     filename: 'index_bundle.js'
   },
   plugins: [
+    // Add plugin BuildPlugin before your DllReference plugin.
     new WebpackBuildDllPlugin({
-        dllConfigPath: './webpack.dll.config.js', // Your Dll Config Path, Support Absolute Path
-        forceBuild: false // default is false, if {true} it will build DllReference in once upon starting Webpack
-    }), // Add Plugin BuildPlugin Before your DllReference Plugin
+        // dllConfigPath: required, your Dll Config Path, support absolute path.
+        dllConfigPath: './webpack.dll.config.js',
+        // forceBuild: default is false, if {true} it will build DllReference in once upon starting Webpack.
+        forceBuild: false
+    }),
     new webpack.DllReferencePlugin({
       context: `./${outputPath}`,
       manifest: require(`./${outputPath}/${publicPath}/vendors-manifest${__DEV__ ? '.dev' : '.prod'}.json`)
