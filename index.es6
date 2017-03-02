@@ -1,21 +1,16 @@
 const path = require('path')
 const fs = require('fs')
-const { exec } = require('child_process')
+const { execSync } = require('child_process')
+const { green, yellow } = require('chalk')
 
 function WebpackBuildDllPlugin(options) {
 	const defaultOptions = {
 		dllConfigPath: '',
 		forceBuild: false
 	}
-	this.options = { ...defaultOptions, ...options }
-}
+	options = { ...defaultOptions, ...options }
 
-function logger(error, stdout, stderr) {
-	console.log(stdout)
-}
-
-WebpackBuildDllPlugin.prototype.apply = function(compiler) {
-	const options = this.options
+	this.options = options
 	if (options.dllConfigPath) {
 		const rootPath = process.cwd()
 		const dllConfigPath = path.isAbsolute(options.dllConfigPath) ? options.dllConfigPath : path.join(rootPath, options.dllConfigPath)
@@ -30,14 +25,19 @@ WebpackBuildDllPlugin.prototype.apply = function(compiler) {
 			const filename = output.filename.replace('[name]', firstEntryName)
 			const absolutePath = path.join(rootPath, outputPath, filename)
 			if (options.forceBuild || !fs.existsSync(absolutePath)) {
-				exec(`cross-env NODE_ENV=${process.env.NODE_ENV || 'development'} webpack --config ${dllConfigPath}`, logger)
+				console.log(green(execSync(`cross-env NODE_ENV=${process.env.NODE_ENV || 'development'} webpack --config ${dllConfigPath}`)))
+				console.log(yellow('[webpack-build-dll-plugin] DllReference is builded.\n'))
+				return 0
 			} else {
-				console.log('[webpack-build-dll-plugin] DllReference is already builded.')
+				console.log(yellow('[webpack-build-dll-plugin] DllReference is already builded.\n'))
+				return 0
 			}
 		} else {
-			throw Error('[webpack-build-dll-plugin] Not Found dllConfigPath.')
+			throw Error('[webpack-build-dll-plugin] Not Found dllConfigPath.\n')
 		}
 	}
 }
+
+WebpackBuildDllPlugin.prototype.apply = function(compiler) {}
 
 module.exports = WebpackBuildDllPlugin

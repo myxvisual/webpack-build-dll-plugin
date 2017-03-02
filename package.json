@@ -1,6 +1,6 @@
 {
   "name": "webpack-build-dll-plugin",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Simplifies run build dll reference for your webpack project",
   "main": "index.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "babel-cli": "^6.23.0",
     "babel-core": "^6.23.1",
     "babel-preset-es2015": "^6.22.0",
-    "babel-preset-stage-0": "^6.22.0"
+    "babel-preset-stage-0": "^6.22.0",
+    "chalk": "^1.1.3"
   }
 }
