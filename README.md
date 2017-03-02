@@ -19,6 +19,10 @@ var webpackConfig = {
     new WebpackBuildDllPlugin({
         dllConfigPath: './webpack.dll.config.js', // Your Dll Config Path, Support Absolute Path
         forceBuild: false // default is false, if {true} it will build DllReference in once upon starting Webpack
+    }), // Add Plugin BuildPlugin Before your DllReference Plugin
+    new webpack.DllReferencePlugin({
+      context: `./${outputPath}`,
+      manifest: require(`./${outputPath}/${publicPath}/vendors-manifest${__DEV__ ? '.dev' : '.prod'}.json`)
     })
   ]
 };
