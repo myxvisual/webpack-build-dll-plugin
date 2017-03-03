@@ -115,7 +115,7 @@ function checkDependencies(dllConfigPath) {
 		}
 		if (!existCacheDependenciesFile) {
 			console.log(yellow('[webpack-build-dll-plugin] Cannot find oldDependencies data, will rebuild DllReference & dependencies cache data...'))
-			buildDllReferenceFiles()
+			buildDllReferenceFiles(dllConfigPath)
 		}
 	}
 }
