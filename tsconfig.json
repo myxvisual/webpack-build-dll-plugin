@@ -1,0 +1,29 @@
+{
+	"compileOnSave": false,
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es5",
+		"sourceMap": true,
+		"moduleResolution": "node",
+		"experimentalDecorators": true,
+		"removeComments": true,
+		"noImplicitAny": true,
+		"allowJs": true,
+		"noLib": false,
+		"typeRoots": [
+			"node_modules/@types"
+		],
+		"baseUrl": "src"
+	},
+	"filesGlob": [
+		"**/*.ts",
+		"**/*.tsx"
+	],
+	"include": [
+		"*.ts",
+		"**/*.ts"
+	],
+	"exclude": [
+		"node_modules"
+	]
+}
