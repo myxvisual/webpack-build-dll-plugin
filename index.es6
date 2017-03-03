@@ -3,22 +3,20 @@ const fs = require('fs')
 const async = require('async')
 const DllPlugin = require('webpack/lib/DllPlugin')
 const { execSync } = require('child_process')
-const { green, yellow } = require('chalk')
+const { green, yellow, red } = require('chalk')
 
-const cacheDependenciesFile = path.join(__dirname, '_dependencies_cache.json')
 const rootPath = process.cwd()
+const cacheDependenciesFile = path.join(__dirname, '_dependencies_cache.json')
+const packageJSONFile = path.join(__dirname, '../../package.json')
 
+function WebpackBuildDllPlugin(newOptions) {
+	const defaultOptions = { dllConfigPath: '', forceBuild: false }
+	const options = { ...defaultOptions, ...newOptions }
+	this.options = options
 
-function WebpackBuildDllPlugin(options) {
-	const defaultOptions = {
-		dllConfigPath: '',
-		forceBuild: false
-	}
-	this.options = Object.assign(defaultOptions, options)
-	options = this.options
-	let dllConfigPath = options.dllConfigPath
+	let { dllConfigPath } = options
 	if (dllConfigPath) {
-		dllConfigPath = path.isAbsolute(options.dllConfigPath) ? options.dllConfigPath : path.join(rootPath, options.dllConfigPath)
+		dllConfigPath = path.isAbsolute(dllConfigPath) ? dllConfigPath : path.join(rootPath, dllConfigPath)
 		if (!fs.existsSync(dllConfigPath)) {
 			throw Error('[webpack-build-dll-plugin] Not Found DllConfigPath.\n')
 		}
@@ -27,31 +25,42 @@ function WebpackBuildDllPlugin(options) {
 	}
 
 	const dllConfig = require(dllConfigPath)
+	const configKeys = ['entry', 'output', 'plugins']
+	for (const configKey of configKeys) {
+		if (!configKey in dllConfig) {
+			throw Error(`DllReference config is required: ${configKey}`)
+		}
+	}
 
 	const { entry, output, plugins } = dllConfig
 	let dllPlugin
 	for (const plugin of plugins) {
-		if (plugin instanceof DllPlugin) dllPlugin = plugin
+		if (plugin instanceof DllPlugin) {
+			dllPlugin = plugin
+			break
+		}
 	}
+
 	if (dllPlugin === void 0) {
 		throw Error('Not Found DllReference Plugin.')
 	}
+
 	const entryNames = Object.keys(entry)
 	const buildJSFiles = []
 	const manifestFiles = []
 	for (const entryName of entryNames) {
 		buildJSFiles.push(
-			getAbsolutePath(output.filename.replace('[name]', entryName), output.path, rootPath)
+			getJoinPaths(rootPath, output.path, output.filename.replace('[name]', entryName) )
 		)
 		manifestFiles.push(
-			getAbsolutePath(dllPlugin.options.path.replace('[name]', entryName), '', rootPath)
+			getJoinPaths(rootPath, dllPlugin.options.path.replace('[name]', entryName))
 		)
 	}
 	const allBuildFiles = [...buildJSFiles, ...manifestFiles]
 	if (options.forceBuild || !allBuildFiles.every(buildFile => fs.existsSync(buildFile))) {
 		buildDllReferenceFiles(dllConfigPath)
 	} else {
-		checkLibManifest(dllPlugin, dllConfigPath)
+		checkDependencies(dllConfigPath)
 	}
 }
 
@@ -59,7 +68,7 @@ function buildDllReferenceFiles(dllConfigPath) {
 	console.log(green(
 		execSync(`cross-env NODE_ENV=${process.env.NODE_ENV || 'development'} webpack --config ${dllConfigPath}`)
 	))
-	fs.readFile(path.join(rootPath, './package.json'), 'utf8', (err, data) => {
+	fs.readFile(packageJSONFile, 'utf8', (err, data) => {
 		if (!err) {
 			fs.writeFile(cacheDependenciesFile, JSON.stringify(JSON.parse(data).dependencies || {}))
 		}
@@ -67,19 +76,17 @@ function buildDllReferenceFiles(dllConfigPath) {
 	console.log(yellow('[webpack-build-dll-plugin] DllReference is builded.\n'))
 }
 
-function getAbsolutePath(filePath, joinPath, rootPath) {
-	return path.join(rootPath, ...(path.isAbsolute(filePath) ? (
-		[path.relative(filePath, rootPath)]
-	) : [joinPath, filePath]))
+function getJoinPaths(rootPath, ...joinPaths) {
+	return path.join(rootPath, ...joinPaths.map(joinPath => (
+		path.isAbsolute(joinPath) ? path.relative(joinPath, rootPath) : joinPath
+	)))
 }
 
-WebpackBuildDllPlugin.prototype.apply = function(compiler) {}
-
-function checkLibManifest(dllPlugin, dllConfigPath) {
+function checkDependencies(dllConfigPath) {
 	console.log(yellow('[webpack-build-dll-plugin] DllReference Files is already builded.\n'))
 	console.log(yellow('Now Checking Manifest Files Different...\n'))
-	if (fs.existsSync(cacheDependenciesFile)) {
-		const dependencies = JSON.parse(fs.readFileSync(path.join(rootPath, './package.json'))).dependencies
+	if (fs.existsSync(packageJSONFile)) {
+		const dependencies = JSON.parse(fs.readFileSync(packageJSONFile)).dependencies
 		const oldDependencies = JSON.parse(fs.readFileSync(cacheDependenciesFile))
 		const dependenciesNames = Object.keys(dependencies)
 		const oldDependenciesNames = Object.keys(oldDependencies)
@@ -89,17 +96,21 @@ function checkLibManifest(dllPlugin, dllConfigPath) {
 			let isSameDependencies = true
 			for (const name of dependenciesNames) {
 				if (dependencies[name] !== oldDependencies[name]) {
-					console.log(green('[webpack-build-dll-plugin] your package.json is changed, will rebuild DllReference.'))
+					console.log(green('[webpack-build-dll-plugin] your package.json dependencies is changed, will rebuild DllReference.'))
 					buildDllReferenceFiles(dllConfigPath)
 					isSameDependencies = false
 					break
 				}
 			}
 			if (isSameDependencies) {
-				console.log(green('[webpack-build-dll-plugin] your package.json dependencies is look the same, DllReference will not build.'))
+				console.log(green('[webpack-build-dll-plugin] your package.json dependencies is look the same, DllReference will not rebuild.'))
 			}
 		}
+	} else {
+		console.error(red('[webpack-build-dll-plugin] Cannot find package.json file...'))
 	}
 }
+
+WebpackBuildDllPlugin.prototype.apply = function(compiler) {}
 
 module.exports = WebpackBuildDllPlugin
