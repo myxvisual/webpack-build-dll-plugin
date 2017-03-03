@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as fs from "fs";
+import { execSync } from "child_process";
 const DllPlugin = require("webpack/lib/DllPlugin");
-const { execSync } = require("child_process");
 const { green, yellow, red } = require("chalk");
 
 const rootPath = process.cwd();
