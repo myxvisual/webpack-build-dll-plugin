@@ -1,7 +1,7 @@
 {
   "name": "webpack-build-dll-plugin",
-  "version": "1.1.4",
-  "description": "Simplifies run build dll reference for your webpack project",
+  "version": "1.1.5",
+  "description": "Simplifies run build DllReferencePlugin & DllPlugin for your webpack project",
   "main": "index.js",
   "scripts": {
     "start": "babel ./index.es6 -w -o ./index.js",
@@ -15,7 +15,11 @@
   "keywords": [
     "webpack",
     "webpack plugin",
-    "dll"
+    "dll",
+    "DllPlugin",
+    "webpack DllPlugin",
+    "webpack DllReferencePlugin",
+    "DllReferencePlugin"
   ],
   "author": "myxvisual",
   "license": "MIT",
