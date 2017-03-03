@@ -1,6 +1,6 @@
 [![MIT Licence](https://img.shields.io/badge/licence-MIT-blue.svg)](https://opensource.org/licenses/mit-license.php) 
 [![TypeScript](https://img.shields.io/badge/soucre-TypeScript-blue.svg)](https://github.com/myxvisual/webpack-build-dll-plugin)
-[![npm](https://img.shields.io/badge/webpack--build--dllplugin-1.2.3-green.svg?style=flat)](https://www.npmjs.com/package/webpack-build-dll-plugin)
+[![npm](https://img.shields.io/badge/webpack--build--dllplugin-1.2.4-green.svg?style=flat)](https://www.npmjs.com/package/webpack-build-dll-plugin)
 [![npm](https://img.shields.io/badge/dowloads-400%2B-brightgreen.svg)](https://www.npmjs.com/package/webpack-build-dll-plugin)
 [![npm](https://img.shields.io/badge/denpendencies-up--to--date-brightgreen.svg)](https://www.npmjs.com/package/webpack-build-dll-plugin)
 
