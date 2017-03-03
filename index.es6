@@ -85,7 +85,10 @@ function getJoinPaths(rootPath, ...joinPaths) {
 function checkDependencies(dllConfigPath) {
 	console.log(yellow('[webpack-build-dll-plugin] DllReference Files is already builded.\n'))
 	console.log(yellow('Now Checking Manifest Files Different...\n'))
-	if (fs.existsSync(packageJSONFile) && fs.existsSync(cacheDependenciesFile)) {
+	const existPackageJSONFile = fs.existsSync(packageJSONFile)
+	const existCacheDependenciesFile = fs.existsSync(cacheDependenciesFile)
+
+	if (existPackageJSONFile && existCacheDependenciesFile) {
 		const dependencies = JSON.parse(fs.readFileSync(packageJSONFile)).dependencies
 		const oldDependencies = JSON.parse(fs.readFileSync(cacheDependenciesFile))
 		const dependenciesNames = Object.keys(dependencies)
@@ -107,8 +110,13 @@ function checkDependencies(dllConfigPath) {
 			}
 		}
 	} else {
-		console.error(red('[webpack-build-dll-plugin] Cannot find package.json file...'))
-		buildDllReferenceFiles(dllConfigPath)
+		if (!existPackageJSONFile) {
+			console.error(red('[webpack-build-dll-plugin] Cannot find package.json file...'))
+		}
+		if (!existCacheDependenciesFile) {
+			console.log(yellow('[webpack-build-dll-plugin] Cannot find oldDependencies data, will rebuild DllReference & dependencies cache data...'))
+			buildDllReferenceFiles()
+		}
 	}
 }
 
