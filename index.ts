@@ -57,15 +57,15 @@ function WebpackBuildDllPlugin(newOptions: any) {
 	}
 	const allBuildFiles = [...buildJSFiles, ...manifestFiles];
 	if (options.forceBuild) {
-		console.log(yellow("[webpack-build-dll-plugin] config forceBuild: false, will rebuild DllReference files."))
+		console.log(yellow("[webpack-build-dll-plugin] config forceBuild: true, will rebuild DllReference files in starting."));
 		buildDllReferenceFiles(dllConfigPath);
 	} else {
-		let allFileBuilded = true
+		let allFileBuilded = true;
 		for (const buildFile of allBuildFiles) {
 			if (!fs.existsSync(buildFile)) {
-				console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`))
+				console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
 				buildDllReferenceFiles(dllConfigPath);
-				allFileBuilded = false
+				allFileBuilded = false;
 				break;
 			}
 		}
