@@ -70,7 +70,15 @@ function WebpackBuildDllPlugin(newOptions: any) {
 		try {
 			packageData = JSON.parse(fs.readFileSync(packageFile, "utf8"));
 		} catch (error) { console.error(red(error)); }
-
+		const getModuleVersion = (moduleName: string) => {
+			const moduleVersion = packageData.dependencies[moduleName];
+			if (moduleVersion === void 0) {
+				console.error(red(`[webpack-build-dll-plugin] missing ${moduleName} version in your package.json file.`));
+				return "";
+			} else {
+				return moduleVersion;
+			}
+		};
 		for (const entryName of entryNames) {
 			const outputEntryName = output.filename.replace("[name]", entryName);
 			outputEntryNames.push(outputEntryName);
@@ -81,7 +89,7 @@ function WebpackBuildDllPlugin(newOptions: any) {
 				getJoinPaths(rootPath, dllPlugin.options.path.replace("[name]", entryName))
 			);
 			cacheData.entry[outputEntryName] = entry[entryName].map((moduleName: string) => ({
-				[moduleName]: packageData.dependencies[moduleName] || ""
+				[moduleName]: getModuleVersion(moduleName)
 			})).reduce((prevObj: any, currObj: any) => ({ ...prevObj, ...currObj }), {});
 		}
 
