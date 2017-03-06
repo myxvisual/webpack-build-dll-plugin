@@ -73,7 +73,7 @@ function WebpackBuildDllPlugin(newOptions: any) {
 		const getModuleVersion = (moduleName: string) => {
 			const moduleVersion = packageData.dependencies[moduleName];
 			if (moduleVersion === void 0) {
-				console.error(red(`[webpack-build-dll-plugin] missing ${moduleName} version in your package.json file.`));
+				console.error(red(`[webpack-build-dll-plugin] missing ${moduleName} version in your package.json file.\n`));
 				return "";
 			} else {
 				return moduleVersion;
