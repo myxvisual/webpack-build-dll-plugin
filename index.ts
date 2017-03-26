@@ -12,20 +12,22 @@ const cacheData: { entry?: any, dependencies?: any } = {
 	entry: {},
 	dependencies: {}
 };
-let oldCacheData: any = {};
 const packageFile = path.join(__dirname, "../../package.json");
 let packageData: any = {};
-let dllConfigPath: string;
 const outputEntryNames: any[] = [];
-const existPackageFile = fs.existsSync(packageFile);
-const existCacheFile = fs.existsSync(cacheFile);
+
+let existPackageFile: boolean;
+let existCacheFile: boolean;
+let oldCacheData: any = {};
+let dllConfigPath: string;
+let dllPlugin: any;
 
 function WebpackBuildDllPlugin(newOptions: any) {
 	const defaultOptions: Options = { dllConfigPath: "", forceBuild: false };
 	const options: Options = { ...defaultOptions, ...newOptions };
 	this.options = options;
-
 	dllConfigPath = options.dllConfigPath;
+
 	if (dllConfigPath) {
 		dllConfigPath = path.isAbsolute(dllConfigPath) ? dllConfigPath : path.join(rootPath, dllConfigPath);
 		if (!fs.existsSync(dllConfigPath)) {
@@ -37,18 +39,19 @@ function WebpackBuildDllPlugin(newOptions: any) {
 
 	const dllConfig: any = require(dllConfigPath);
 	const configKeys = ["entry", "output", "plugins"];
+
 	for (const configKey of configKeys) {
 		if (!(configKey in dllConfig)) {
 			throw Error(`DllReference config is required: ${configKey}`);
 		}
 	}
 
-	const { entry, output, plugins } = dllConfig;
+	const { entry, plugins } = dllConfig;
+
 	if (Array.isArray(entry)) {
 		throw new Error("DllPlugin: supply an Array as entry");
 	}
 
-	let dllPlugin;
 	for (const plugin of plugins) {
 		if (plugin instanceof DllPlugin) {
 			dllPlugin = plugin;
@@ -59,60 +62,74 @@ function WebpackBuildDllPlugin(newOptions: any) {
 	if (dllPlugin === void 0) {
 		throw Error("Not Found DllReference Plugin.");
 	}
+
 	if (options.forceBuild) {
 		console.log(yellow("[webpack-build-dll-plugin] config forceBuild: true, will rebuild DllReference files in starting."));
 		buildDllReferenceFiles();
 	} else {
-		const entryNames = Object.keys(entry);
-		const buildJSFiles = [];
-		const manifestFiles = [];
+		checkFilesBuilded(dllConfig);
+	}
+}
 
-		try {
-			packageData = JSON.parse(fs.readFileSync(packageFile, "utf8"));
-		} catch (error) { console.error(red(error)); }
-		const getModuleVersion = (moduleName: string) => {
-			const moduleVersion = packageData.dependencies[moduleName];
-			if (moduleVersion === void 0) {
-				console.error(red(`[webpack-build-dll-plugin] missing ${moduleName} version in your package.json file.\n`));
-				return "";
-			} else {
-				return moduleVersion;
-			}
-		};
-		for (const entryName of entryNames) {
-			const outputEntryName = output.filename.replace("[name]", entryName);
-			outputEntryNames.push(outputEntryName);
-			buildJSFiles.push(
-				getJoinPaths(rootPath, output.path, outputEntryName)
-			);
-			manifestFiles.push(
-				getJoinPaths(rootPath, dllPlugin.options.path.replace("[name]", entryName))
-			);
-			cacheData.entry[outputEntryName] = entry[entryName].map((moduleName: string) => ({
-				[moduleName]: getModuleVersion(moduleName)
-			})).reduce((prevObj: any, currObj: any) => ({ ...prevObj, ...currObj }), {});
-		}
+function checkFilesBuilded(dllConfig: any) {
+	const { entry, output } = dllConfig;
+	const entryNames = Object.keys(entry);
+	const buildJSFiles = [];
+	const manifestFiles = [];
 
-		const allBuildFiles = [...buildJSFiles, ...manifestFiles];
-		let allFileBuilded = true;
+	try {
+		packageData = JSON.parse(fs.readFileSync(packageFile, "utf8"));
+	} catch (error) { console.error(red(error)); }
 
-		for (const buildFile of allBuildFiles) {
-			if (!fs.existsSync(buildFile)) {
-				console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
-				buildDllReferenceFiles();
-				allFileBuilded = false;
-				break;
-			}
+	const getModuleVersion = (moduleName: string) => {
+		const moduleVersion = packageData.dependencies[moduleName];
+		if (moduleVersion === void 0) {
+			console.error(red(`[webpack-build-dll-plugin] missing ${moduleName} version in your package.json file.\n`));
+			return "";
+		} else {
+			return moduleVersion;
 		}
-		if (allFileBuilded) {
-			checkEntryModules(entry);
+	};
+
+	for (const entryName of entryNames) {
+		const outputEntryName = output.filename.replace("[name]", entryName);
+
+		outputEntryNames.push(outputEntryName);
+
+		buildJSFiles.push(
+			path.isAbsolute(output.path) ? output.path : getJoinPaths(rootPath, output.path, outputEntryName)
+		);
+
+		manifestFiles.push(
+			getJoinPaths(rootPath, dllPlugin.options.path.replace("[name]", entryName))
+		);
+
+		cacheData.entry[outputEntryName] = entry[entryName].map((moduleName: string) => ({
+			[moduleName]: getModuleVersion(moduleName)
+		})).reduce((prevObj: any, currObj: any) => ({ ...prevObj, ...currObj }), {});
+	}
+
+	const allBuildFiles = [...buildJSFiles, ...manifestFiles];
+	let allFileBuilded = true;
+
+	for (const buildFile of allBuildFiles) {
+		if (!fs.existsSync(buildFile)) {
+			console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
+			buildDllReferenceFiles();
+			allFileBuilded = false;
+			break;
 		}
+	}
+	if (allFileBuilded) {
+		checkEntryModules(entry);
 	}
 }
 
 function checkEntryModules(entry: any) {
 	console.log(yellow("[webpack-build-dll-plugin] DllReference files is already builded.\n"));
 	console.log(yellow("[webpack-build-dll-plugin] now checking entry modules & dependencies different...\n"));
+	existPackageFile = fs.existsSync(packageFile);
+	existCacheFile = fs.existsSync(cacheFile);
 
 	if (!existPackageFile) {
 		console.error(red("[webpack-build-dll-plugin] cannot find your package.json file in project...\n"));
@@ -127,6 +144,7 @@ function checkEntryModules(entry: any) {
 
 	if (existPackageFile && existCacheFile) {
 		let isSameModule = true;
+
 		try {
 			oldCacheData = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
 		} catch (error) { console.error(red(error)); }
@@ -136,12 +154,14 @@ function checkEntryModules(entry: any) {
 			buildDllReferenceFiles();
 			return;
 		}
+
 		const entryNames = Object.keys(cacheData.entry);
 		const oldEntryNames = Object.keys(oldCacheData.entry);
 
 		for (const entryName of entryNames) {
 			const entryModules = cacheData.entry[entryName];
 			const oldEntryModules = oldCacheData.entry[entryName];
+
 			if (oldEntryNames.indexOf(entryName) > -1) {
 				const moduleNames = Object.keys(entryModules);
 				const oldModuleNames = Object.keys(oldEntryModules);
