@@ -97,11 +97,16 @@ function checkFilesBuilded(dllConfig: any) {
 		outputEntryNames.push(outputEntryName);
 
 		buildJSFiles.push(
-			path.isAbsolute(output.path) ? output.path : getJoinPaths(rootPath, output.path, outputEntryName)
+			path.join(...[
+				...(path.isAbsolute(output.path) ? [] : [dllConfigPath, "../"]),
+				output.path,
+				outputEntryName
+			])
 		);
 
+		const manifestFileName = dllPlugin.options.path.replace("[name]", entryName);
 		manifestFiles.push(
-			getJoinPaths(rootPath, dllPlugin.options.path.replace("[name]", entryName))
+			path.isAbsolute(manifestFileName) ? manifestFileName : path.join(dllConfigPath, "../", manifestFileName)
 		);
 
 		cacheData.entry[outputEntryName] = entry[entryName].map((moduleName: string) => ({
@@ -191,12 +196,6 @@ function checkEntryModules(entry: any) {
 			console.log(green("[webpack-build-dll-plugin] your entry & modules is look the same, DllReference will not rebuild.\n"));
 		}
 	}
-}
-
-function getJoinPaths(rootPath: string, ...joinPaths: string[]) {
-	return path.join(rootPath, ...joinPaths.map(joinPath => (
-		path.isAbsolute(joinPath) ? path.relative(joinPath, rootPath) : joinPath
-	)));
 }
 
 function buildDllReferenceFiles() {
