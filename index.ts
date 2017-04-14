@@ -116,30 +116,52 @@ function checkFilesBuilded(dllConfig: any) {
 
 	const allBuildFiles = [...buildJSFiles, ...manifestFiles];
 
-	const haveHashFilename = /\[hash\:.*\]/.test(output.filename);
-	if (haveHashFilename) {
-		// checkEntryModules(entry);
-		console.log(yellow("[webpack-build-dll-plugin] your filename have [hash] name...\n"));
-		checkEntryModules(entry);
-		// const oldHash = oldCacheData.hash;
-		// const logger = buildDllReferenceFiles(false);
-		// const currHash = /(?:Hash\:\s)(\w+)/g.exec(logger.toString())[1];
-		// console.log(oldHash, currHash);
-	} else {
-		let allFileBuilded = true;
-		for (const buildFile of allBuildFiles) {
-			if (!fs.existsSync(buildFile)) {
-				console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
-				buildDllReferenceFiles();
-				allFileBuilded = false;
-				break;
-			}
-		}
+	const hashPattern = /\[hash\:\s?\d*\]/;
+	let hashLimit: any;
+	let oldHash: string;
 
-		if (allFileBuilded) {
-			console.log(yellow("[webpack-build-dll-plugin] DllReference files is already builded.\n"));
-			checkEntryModules(entry);
+	const haveHashFilename = hashPattern.test(output.filename);
+	if (haveHashFilename) {
+		console.log(yellow("[webpack-build-dll-plugin] your filename have [hash] name...\n"));
+		try {
+			oldCacheData = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+		} catch (error) {}
+
+		oldHash = oldCacheData.hash;
+		const limitPattern = /(?:\[hash\:\s?)(\d+)\]/;
+		hashLimit = limitPattern.test(output.filename) && limitPattern.exec(output.filename)[1];
+
+		if (!oldHash) {
+			console.log(yellow("[webpack-build-dll-plugin] not find [hash] name, will build DllReferenceFiles...\n"));
+			const logger = buildDllReferenceFiles(false).toString();
+			let currHash = "";
+			const loggerHashPattern = /(?:Hash\:\s)(\w+)/;
+			if (loggerHashPattern.test(logger)) {
+				currHash = loggerHashPattern.exec(logger)[1];
+				cacheData.hash = currHash;
+				console.log(currHash);
+				writeCacheFile();
+			}
+			return;
 		}
+	}
+
+	let allFileBuilded = true;
+	for (let buildFile of allBuildFiles) {
+		if (haveHashFilename && hashPattern.test(buildFile)) {
+			buildFile = buildFile.replace(hashPattern, hashLimit ? oldHash.slice(0 , hashLimit) : oldHash);
+		}
+		if (!fs.existsSync(buildFile)) {
+			console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
+			buildDllReferenceFiles();
+			allFileBuilded = false;
+			break;
+		}
+	}
+
+	if (allFileBuilded) {
+		console.log(yellow("[webpack-build-dll-plugin] DllReference files is already builded.\n"));
+		checkEntryModules(entry);
 	}
 }
 
@@ -211,14 +233,18 @@ function checkEntryModules(entry: any) {
 	}
 }
 
-function buildDllReferenceFiles(writeCache = true) {
+function buildDllReferenceFiles(canWriteCache = true) {
 	const logger: Buffer = execSync(`webpack --config ${dllConfigPath}`);
 	console.log(green(logger));
 	console.log(yellow("[webpack-build-dll-plugin] DllReference is builded.\n"));
-	if (writeCache) {
-		fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2));
+	if (canWriteCache) {
+		writeCacheFile();
 	}
 	return logger;
+}
+
+function writeCacheFile() {
+	fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2));
 }
 
 WebpackBuildDllPlugin.prototype.apply = function(compiler: any) {};
