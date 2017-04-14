@@ -8,7 +8,7 @@ type Options = { dllConfigPath: string, forceBuild?: boolean };
 
 const rootPath = process.cwd();
 const cacheFile = path.join(__dirname, "_cache.json");
-const cacheData: { entry?: any, dependencies?: any } = {
+const cacheData: { entry?: any, dependencies?: any; hash?: string; } = {
 	entry: {},
 	dependencies: {}
 };
@@ -115,23 +115,35 @@ function checkFilesBuilded(dllConfig: any) {
 	}
 
 	const allBuildFiles = [...buildJSFiles, ...manifestFiles];
-	let allFileBuilded = true;
 
-	for (const buildFile of allBuildFiles) {
-		if (!fs.existsSync(buildFile)) {
-			console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
-			buildDllReferenceFiles();
-			allFileBuilded = false;
-			break;
-		}
-	}
-	if (allFileBuilded) {
+	const haveHashFilename = /\[hash\:.*\]/.test(output.filename);
+	if (haveHashFilename) {
+		// checkEntryModules(entry);
+		console.log(yellow("[webpack-build-dll-plugin] your filename have [hash] name...\n"));
 		checkEntryModules(entry);
+		// const oldHash = oldCacheData.hash;
+		// const logger = buildDllReferenceFiles(false);
+		// const currHash = /(?:Hash\:\s)(\w+)/g.exec(logger.toString())[1];
+		// console.log(oldHash, currHash);
+	} else {
+		let allFileBuilded = true;
+		for (const buildFile of allBuildFiles) {
+			if (!fs.existsSync(buildFile)) {
+				console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
+				buildDllReferenceFiles();
+				allFileBuilded = false;
+				break;
+			}
+		}
+
+		if (allFileBuilded) {
+			console.log(yellow("[webpack-build-dll-plugin] DllReference files is already builded.\n"));
+			checkEntryModules(entry);
+		}
 	}
 }
 
 function checkEntryModules(entry: any) {
-	console.log(yellow("[webpack-build-dll-plugin] DllReference files is already builded.\n"));
 	console.log(yellow("[webpack-build-dll-plugin] now checking entry modules & dependencies different...\n"));
 	existPackageFile = fs.existsSync(packageFile);
 	existCacheFile = fs.existsSync(cacheFile);
@@ -186,6 +198,7 @@ function checkEntryModules(entry: any) {
 				cacheData.entry = oldCacheData.entry;
 				isSameModule = false;
 			}
+
 			if (!isSameModule) {
 				console.log(yellow(`[webpack-build-dll-plugin] your dllConfig entry ${entryName} modules version is look changed, wil rebuild DllReferenceFiles...`));
 				buildDllReferenceFiles();
@@ -198,12 +211,14 @@ function checkEntryModules(entry: any) {
 	}
 }
 
-function buildDllReferenceFiles() {
-	console.log(green(
-		execSync(`webpack --config ${dllConfigPath}`)
-	));
+function buildDllReferenceFiles(writeCache = true) {
+	const logger: Buffer = execSync(`webpack --config ${dllConfigPath}`);
+	console.log(green(logger));
 	console.log(yellow("[webpack-build-dll-plugin] DllReference is builded.\n"));
-	fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2));
+	if (writeCache) {
+		fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2));
+	}
+	return logger;
 }
 
 WebpackBuildDllPlugin.prototype.apply = function(compiler: any) {};
