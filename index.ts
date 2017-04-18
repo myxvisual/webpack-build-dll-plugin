@@ -244,7 +244,7 @@ function buildDllReferenceFiles(canWriteCache = true) {
 }
 
 function writeCacheFile() {
-	fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2));
+	fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2), () => {});
 }
 
 WebpackBuildDllPlugin.prototype.apply = function(compiler: any) {};
