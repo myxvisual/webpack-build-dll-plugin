@@ -234,13 +234,13 @@ function checkEntryModules(entry: any) {
 }
 
 function buildDllReferenceFiles(canWriteCache = true) {
-	const logger = child_process.spawnSync(`webpack --config ${dllConfigPath}`);
-	console.log(chalk.green(logger.toString()));
+	const buffer = child_process.spawnSync(`webpack${process.platform === "win32" ? ".cmd" : ""}`, ["--config", dllConfigPath]);
+	console.log(chalk.green(buffer.stdout));
 	console.log(chalk.yellow("[webpack-build-dll-plugin] DllReference is builded.\n"));
 	if (canWriteCache) {
 		writeCacheFile();
 	}
-	return logger;
+	return buffer.stdout;
 }
 
 function writeCacheFile() {
