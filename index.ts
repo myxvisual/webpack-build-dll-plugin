@@ -1,8 +1,8 @@
 import * as path from "path";
 import * as fs from "fs";
-import { execSync } from "child_process";
+import * as child_process from "child_process";
 const DllPlugin = require("webpack/lib/DllPlugin");
-const { green, yellow, red } = require("chalk");
+const chalk = require("chalk");
 
 type Options = { dllConfigPath: string, forceBuild?: boolean };
 
@@ -64,7 +64,7 @@ function WebpackBuildDllPlugin(newOptions: any) {
 	}
 
 	if (options.forceBuild) {
-		console.log(yellow("[webpack-build-dll-plugin] config forceBuild: true, will rebuild DllReference files in starting."));
+		console.log(chalk.yellow("[webpack-build-dll-plugin] config forceBuild: true, will rebuild DllReference files in starting."));
 		buildDllReferenceFiles();
 	} else {
 		checkFilesBuilded(dllConfig);
@@ -79,12 +79,12 @@ function checkFilesBuilded(dllConfig: any) {
 
 	try {
 		packageData = JSON.parse(fs.readFileSync(packageFile, "utf8"));
-	} catch (error) { console.error(red(error)); }
+	} catch (error) { console.error(chalk.red(error)); }
 
 	const getModuleVersion = (moduleName: string) => {
 		const moduleVersion = packageData.dependencies[moduleName];
 		if (moduleVersion === void 0) {
-			console.error(red(`[webpack-build-dll-plugin] missing ${moduleName} version in your package.json file.\n`));
+			console.error(chalk.red(`[webpack-build-dll-plugin] missing ${moduleName} version in your package.json file.\n`));
 			return "";
 		} else {
 			return moduleVersion;
@@ -122,7 +122,7 @@ function checkFilesBuilded(dllConfig: any) {
 
 	const haveHashFilename = hashPattern.test(output.filename);
 	if (haveHashFilename) {
-		console.log(yellow("[webpack-build-dll-plugin] your filename have [hash] name...\n"));
+		console.log(chalk.yellow("[webpack-build-dll-plugin] your filename have [hash] name...\n"));
 		try {
 			oldCacheData = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
 		} catch (error) {}
@@ -132,7 +132,7 @@ function checkFilesBuilded(dllConfig: any) {
 		hashLimit = limitPattern.test(output.filename) && limitPattern.exec(output.filename)[1];
 
 		if (!oldHash) {
-			console.log(yellow("[webpack-build-dll-plugin] not find [hash] name, will build DllReferenceFiles...\n"));
+			console.log(chalk.yellow("[webpack-build-dll-plugin] not find [hash] name, will build DllReferenceFiles...\n"));
 			const logger = buildDllReferenceFiles(false).toString();
 			let currHash = "";
 			const loggerHashPattern = /(?:Hash\:\s)(\w+)/;
@@ -152,7 +152,7 @@ function checkFilesBuilded(dllConfig: any) {
 			buildFile = buildFile.replace(hashPattern, hashLimit ? oldHash.slice(0 , hashLimit) : oldHash);
 		}
 		if (!fs.existsSync(buildFile)) {
-			console.error(red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
+			console.error(chalk.red(`[webpack-build-dll-plugin] missing build file: ${buildFile}, will rebuild DllReference files.`));
 			buildDllReferenceFiles();
 			allFileBuilded = false;
 			break;
@@ -160,23 +160,23 @@ function checkFilesBuilded(dllConfig: any) {
 	}
 
 	if (allFileBuilded) {
-		console.log(yellow("[webpack-build-dll-plugin] DllReference files is already builded.\n"));
+		console.log(chalk.yellow("[webpack-build-dll-plugin] DllReference files is already builded.\n"));
 		checkEntryModules(entry);
 	}
 }
 
 function checkEntryModules(entry: any) {
-	console.log(yellow("[webpack-build-dll-plugin] now checking entry modules & dependencies different...\n"));
+	console.log(chalk.yellow("[webpack-build-dll-plugin] now checking entry modules & dependencies different...\n"));
 	existPackageFile = fs.existsSync(packageFile);
 	existCacheFile = fs.existsSync(cacheFile);
 
 	if (!existPackageFile) {
-		console.error(red("[webpack-build-dll-plugin] cannot find your package.json file in project...\n"));
+		console.error(chalk.red("[webpack-build-dll-plugin] cannot find your package.json file in project...\n"));
 		return;
 	}
 
 	if (!existCacheFile) {
-		console.log(yellow("[webpack-build-dll-plugin] cannot find old cache data, will rebuild new DllReference & new entry modules & dependencies cache data...\n"));
+		console.log(chalk.yellow("[webpack-build-dll-plugin] cannot find old cache data, will rebuild new DllReference & new entry modules & dependencies cache data...\n"));
 		buildDllReferenceFiles();
 		return;
 	}
@@ -186,10 +186,10 @@ function checkEntryModules(entry: any) {
 
 		try {
 			oldCacheData = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
-		} catch (error) { console.error(red(error)); }
+		} catch (error) { console.error(chalk.red(error)); }
 
 		if (!("entry" in oldCacheData && "dependencies" in oldCacheData)) {
-			console.log(yellow("[webpack-build-dll-plugin] entry & dependencies is not in cache data, will rebuild DllReferenceFiles...\n"));
+			console.log(chalk.yellow("[webpack-build-dll-plugin] entry & dependencies is not in cache data, will rebuild DllReferenceFiles...\n"));
 			buildDllReferenceFiles();
 			return;
 		}
@@ -222,21 +222,21 @@ function checkEntryModules(entry: any) {
 			}
 
 			if (!isSameModule) {
-				console.log(yellow(`[webpack-build-dll-plugin] your dllConfig entry ${entryName} modules version is look changed, wil rebuild DllReferenceFiles...`));
+				console.log(chalk.yellow(`[webpack-build-dll-plugin] your dllConfig entry ${entryName} modules version is look changed, wil rebuild DllReferenceFiles...`));
 				buildDllReferenceFiles();
 			}
 		}
 
 		if (isSameModule) {
-			console.log(green("[webpack-build-dll-plugin] your entry & modules is look the same, DllReference will not rebuild.\n"));
+			console.log(chalk.green("[webpack-build-dll-plugin] your entry & modules is look the same, DllReference will not rebuild.\n"));
 		}
 	}
 }
 
 function buildDllReferenceFiles(canWriteCache = true) {
-	const logger: Buffer = execSync(`webpack --config ${dllConfigPath}`);
-	console.log(green(logger));
-	console.log(yellow("[webpack-build-dll-plugin] DllReference is builded.\n"));
+	const logger = child_process.spawnSync(`webpack --config ${dllConfigPath}`);
+	console.log(chalk.green(logger.toString()));
+	console.log(chalk.yellow("[webpack-build-dll-plugin] DllReference is builded.\n"));
 	if (canWriteCache) {
 		writeCacheFile();
 	}
