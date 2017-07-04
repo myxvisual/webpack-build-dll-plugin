@@ -6,6 +6,10 @@ const { green, yellow, red } = require("chalk");
 
 type Options = { dllConfigPath: string, forceBuild?: boolean };
 
+const propOrIdentity = function(prop: string, input: any): any {
+  reutrn input[prop] || input
+}
+
 const rootPath = process.cwd();
 const cacheFile = path.join(__dirname, "_cache.json");
 const cacheData: { entry?: any, dependencies?: any; hash?: string; } = {
@@ -13,6 +17,7 @@ const cacheData: { entry?: any, dependencies?: any; hash?: string; } = {
 	dependencies: {}
 };
 const packageFile = path.join(__dirname, "../../package.json");
+
 let packageData: any = {};
 const outputEntryNames: any[] = [];
 
@@ -37,7 +42,7 @@ function WebpackBuildDllPlugin(newOptions: any) {
 		throw Error("[webpack-build-dll-plugin] please set DllConfigPath.\n");
 	}
 
-	const dllConfig: any = require(dllConfigPath);
+	const dllConfig: any = propOrIdentity('default', require(dllConfigPath));
 	const configKeys = ["entry", "output", "plugins"];
 
 	for (const configKey of configKeys) {
