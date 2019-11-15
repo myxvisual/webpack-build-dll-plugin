@@ -239,13 +239,18 @@ function checkEntryModules(entry: any) {
 }
 
 function buildDllReferenceFiles(canWriteCache = true) {
-	const logger: Buffer = execSync(`webpack --config ${dllConfigPath}`);
-	console.log(green(logger));
-	console.log(yellow("[webpack-build-dll-plugin] DllReference is built.\n"));
-	if (canWriteCache) {
-		writeCacheFile();
+	try {
+		const logger: Buffer = execSync(`webpack --config ${dllConfigPath}`);
+		console.log(green(logger));
+		console.log(yellow("[webpack-build-dll-plugin] DllReference is built.\n"));
+		if (canWriteCache) {
+			writeCacheFile();
+		}
+
+		return logger;
+	} catch (ex) {
+		console.error(ex.stdout);
 	}
-	return logger;
 }
 
 function writeCacheFile() {
