@@ -138,11 +138,11 @@ function checkFilesBuilded(dllConfig: any) {
 
 		if (!oldHash) {
 			console.log(yellow("[webpack-build-dll-plugin] not find [hash] name, will build DllReferenceFiles...\n"));
-			const logger = buildDllReferenceFiles(false).toString();
+			const buffer = buildDllReferenceFiles(false);
 			let currHash = "";
 			const loggerHashPattern = /(?:Hash\:\s)(\w+)/;
-			if (loggerHashPattern.test(logger)) {
-				currHash = loggerHashPattern.exec(logger)[1];
+			if (loggerHashPattern.test(buffer)) {
+				currHash = loggerHashPattern.exec(buffer)[1];
 				cacheData.hash = currHash;
 				console.log(currHash);
 				writeCacheFile();
@@ -241,15 +241,19 @@ function checkEntryModules(entry: any) {
 function buildDllReferenceFiles(canWriteCache = true) {
 	try {
 		const logger: Buffer = execSync(`webpack --config ${dllConfigPath}`);
-		console.log(green(logger));
-		console.log(yellow("[webpack-build-dll-plugin] DllReference is built.\n"));
 		if (canWriteCache) {
 			writeCacheFile();
+		}
+
+		if (logger) {
+			console.log(green(logger));
+			console.log(yellow("[webpack-build-dll-plugin] DllReference is built.\n"));
 		}
 
 		return logger;
 	} catch (ex) {
 		console.error(ex.stdout);
+		return ex.stdout;
 	}
 }
 
