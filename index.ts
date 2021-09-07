@@ -7,7 +7,7 @@ const { green, yellow, red } = require("chalk");
 type Options = { dllConfigPath: string, forceBuild?: boolean };
 
 const propOrIdentity = function(prop: string, input: any): any {
-  reutrn input[prop] || input
+  return input[prop] || input
 }
 
 const rootPath = process.cwd();
@@ -258,7 +258,9 @@ function buildDllReferenceFiles(canWriteCache = true) {
 }
 
 function writeCacheFile() {
-	fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2));
+	fs.writeFile(cacheFile, JSON.stringify(cacheData, null, 2), () => {
+		console.log(green(`[webpack-build-dll-plugin] cacheFile is saved.`));
+	});
 }
 
 WebpackBuildDllPlugin.prototype.apply = function(compiler: any) {};

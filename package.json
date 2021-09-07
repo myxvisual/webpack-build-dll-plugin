@@ -1,6 +1,6 @@
 {
   "name": "webpack-build-dll-plugin",
-  "version": "1.3.0",
+  "version": "1.3.6",
   "description": "Simplifies run build DllReferencePlugin & DllPlugin for your webpack project",
   "main": "index.js",
   "scripts": {
